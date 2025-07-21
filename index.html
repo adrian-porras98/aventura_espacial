@@ -4,17 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aventura Espacial Matemática</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome CDN -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
-    <!-- React and ReactDOM CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- Babel Standalone for JSX transformation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         /* Custom animations */
@@ -47,61 +42,102 @@
         .group:hover .group-hover\:animate-pulse {
             animation: pulse 1s infinite ease-in-out;
         }
+        /* Modal specific animation */
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-animate-in {
+            animation: modalFadeIn 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
+        // Componente FeedbackModal
+        const FeedbackModal = ({ show, isCorrect, correctAnswer, explanation, onClose, operationTitle, studentName }) => {
+            if (!show) return null;
+
+            const title = isCorrect ? `¡Misión Cumplida en ${operationTitle}!` : `¡Ajuste de Ruta en ${operationTitle}!`;
+            const icon = isCorrect ? 'fas fa-check-circle text-green-400' : 'fas fa-times-circle text-red-400';
+            const bgColor = isCorrect ? 'from-green-700 to-emerald-800' : 'from-red-700 to-rose-800';
+            const borderColor = isCorrect ? 'border-green-400' : 'border-red-400';
+            const message = isCorrect ? `¡Felicidades, ${studentName}! Tu respuesta es correcta. Ganaste 10 Puntos Galácticos.` : `Parece que hubo un pequeño error, ${studentName}. La respuesta correcta era: ${correctAnswer}.`;
+            const actionText = isCorrect ? 'Siguiente Desafío' : 'Cerrar y Reintentar';
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 modal-animate-in">
+                    <div className={`bg-gradient-to-br ${bgColor} p-8 rounded-xl shadow-2xl border-4 ${borderColor} text-white max-w-lg w-full text-center relative`}>
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 text-gray-200 hover:text-white text-2xl"
+                        >
+                            <i className="fas fa-times"></i>
+                        </button>
+                        <i className={`${icon} text-7xl mb-6 animate-bounce-in`}></i>
+                        <h3 className="text-3xl font-extrabold text-yellow-300 mb-4">{title}</h3>
+                        <p className="text-xl text-gray-200 mb-6 leading-relaxed">{message}</p>
+                        {!isCorrect && explanation && (
+                            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg mb-6 text-left">
+                                <h4 className="text-xl font-bold text-yellow-200 mb-2">Así se resuelve:</h4>
+                                <p className="text-lg text-gray-200 whitespace-pre-line">{explanation}</p>
+                            </div>
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                        >
+                            <i className="fas fa-arrow-right mr-2"></i> {actionText}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
         // Main App Component
         const App = () => {
-          // State to manage the current page view
-          // 'home', 'planet-selection', 'sumas', 'restas', 'multiplicacion', 'division', 'final-evaluation'
           const [currentPage, setCurrentPage] = React.useState('home');
-          // State to store user progress (completed activities, scores)
+          const [studentName, setStudentName] = React.useState(''); // Nuevo estado para el nombre del estudiante
           const [userProgress, setUserProgress] = React.useState({
             sumas: { activitiesCompleted: 0, totalActivities: 3, score: 0 },
             restas: { activitiesCompleted: 0, totalActivities: 3, score: 0 },
             multiplicacion: { activitiesCompleted: 0, totalActivities: 3, score: 0 },
             division: { activitiesCompleted: 0, totalActivities: 3, score: 0 },
             totalScore: 0,
-            badges: [], // e.g., ['sumas-master', 'restas-explorer', 'galactic-master']
-            finalEvaluationCompleted: false, // New: Track if the final evaluation is done
+            badges: [],
+            finalEvaluationCompleted: false,
           });
-          // State to hold the currently selected operation for dynamic content loading
           const [selectedOperation, setSelectedOperation] = React.useState('');
 
-          // Function to navigate to a different page
           const navigateTo = (page, operation = '') => {
             setCurrentPage(page);
             setSelectedOperation(operation);
           };
 
-          // Function to update progress for an operation
           const updateProgress = (operation, type, value) => {
             setUserProgress(prev => {
               const newProgress = { ...prev };
               if (type === 'activity') {
-                // Ensure activitiesCompleted doesn't exceed totalActivities
                 newProgress[operation].activitiesCompleted = Math.min(
                   prev[operation].activitiesCompleted + value,
                   prev[operation].totalActivities
                 );
               } else if (type === 'score') {
-                // If the operation is 'global', update totalScore directly
                 if (operation === 'global') {
                   newProgress.totalScore += value;
                 } else {
-                  // Otherwise, update the score for the specific operation and totalScore
                   newProgress[operation].score += value;
                   newProgress.totalScore += value;
                 }
               } else if (type === 'finalEvaluationCompleted') {
                 newProgress.finalEvaluationCompleted = value;
-                if (value && newProgress.totalScore >= 100 && !newProgress.badges.includes('galactic-master')) { // Example: 100 points for master badge
+                // Add badge only if value is true and not already present
+                if (value && newProgress.totalScore >= 100 && !newProgress.badges.includes('galactic-master')) {
                   newProgress.badges.push('galactic-master');
                 }
-              } else if (type === 'badge') { // For individual operation badges
+              } else if (type === 'badge') {
                 if (!newProgress.badges.includes(value)) {
                   newProgress.badges.push(value);
                 }
@@ -110,7 +146,6 @@
             });
           };
 
-          // Function to reset the entire game progress
           const resetGame = () => {
             setUserProgress({
               sumas: { activitiesCompleted: 0, totalActivities: 3, score: 0 },
@@ -121,22 +156,21 @@
               badges: [],
               finalEvaluationCompleted: false,
             });
+            setStudentName(''); // También resetea el nombre
             setCurrentPage('home');
             setSelectedOperation('');
           };
 
-          // Check if all activities across all operations are completed
           const areAllActivitiesCompleted = ['sumas', 'restas', 'multiplicacion', 'division'].every(opKey =>
             userProgress[opKey].activitiesCompleted === userProgress[opKey].totalActivities
           );
 
-          // Render different components based on currentPage state
           const renderPage = () => {
             switch (currentPage) {
               case 'home':
-                return <HomePage navigateTo={navigateTo} resetGame={resetGame} />;
+                return <HomePage navigateTo={navigateTo} resetGame={resetGame} studentName={studentName} setStudentName={setStudentName} />;
               case 'planet-selection':
-                return <PlanetSelection navigateTo={navigateTo} userProgress={userProgress} areAllActivitiesCompleted={areAllActivitiesCompleted} />;
+                return <PlanetSelection navigateTo={navigateTo} userProgress={userProgress} areAllActivitiesCompleted={areAllActivitiesCompleted} studentName={studentName} />;
               case 'sumas':
               case 'restas':
               case 'multiplicacion':
@@ -149,6 +183,7 @@
                     updateProgress={updateProgress}
                     totalScore={userProgress.totalScore}
                     badges={userProgress.badges}
+                    studentName={studentName}
                   />
                 );
               case 'final-evaluation':
@@ -157,10 +192,11 @@
                     navigateTo={navigateTo}
                     updateProgress={updateProgress}
                     userProgress={userProgress}
+                    studentName={studentName}
                   />
                 );
               default:
-                return <HomePage navigateTo={navigateTo} resetGame={resetGame} />;
+                return <HomePage navigateTo={navigateTo} resetGame={resetGame} studentName={studentName} setStudentName={setStudentName} />;
             }
           };
 
@@ -215,32 +251,78 @@
         };
 
         // Home Page Component
-        const HomePage = ({ navigateTo, resetGame }) => {
+        const HomePage = ({ navigateTo, resetGame, studentName, setStudentName }) => {
+          const [inputName, setInputName] = React.useState('');
+
+          const handleStartAdventure = () => {
+            if (inputName.trim() !== '') {
+              setStudentName(inputName.trim());
+              navigateTo('planet-selection');
+            } else {
+              alert('Por favor, ingresa tu nombre para comenzar la aventura.');
+            }
+          };
+
+          // Si el nombre ya está ingresado, muestra el mensaje de bienvenida y el botón para iniciar
+          if (studentName) {
+            return (
+              <div className="text-center animate-fade-in">
+                <h2 className="text-5xl font-extrabold text-yellow-400 mb-6 drop-shadow-lg">
+                  ¡Bienvenido de nuevo, Cadete Espacial <span className="text-purple-300">{studentName}</span>!
+                </h2>
+                <p className="text-2xl text-gray-200 mb-8 leading-relaxed">
+                  Tu misión es explorar la vasta Galaxia Matemática. Cada planeta es un desafío de operaciones básicas.
+                  <br />¡Prepárate para aprender, practicar y convertirte en un Maestro del Universo Matemático!
+                </p>
+                <button
+                  onClick={() => navigateTo('planet-selection')}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-xl transition duration-300 ease-in-out transform hover:scale-110 animate-bounce-slow mb-4"
+                >
+                  <i className="fas fa-rocket mr-3"></i> ¡Continuar Aventura!
+                </button>
+                <button
+                  onClick={resetGame}
+                  className="block mx-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  <i className="fas fa-redo mr-2"></i> Reiniciar Aventura
+                </button>
+              </div>
+            );
+          }
+
+          // Si el nombre no está ingresado, muestra el formulario
           return (
             <div className="text-center animate-fade-in">
               <h2 className="text-5xl font-extrabold text-yellow-400 mb-6 drop-shadow-lg">¡Bienvenido, Joven Cadete Espacial!</h2>
               <p className="text-2xl text-gray-200 mb-8 leading-relaxed">
-                Tu misión es explorar la vasta Galaxia Matemática. Cada planeta es un desafío de operaciones básicas.
-                <br />¡Prepárate para aprender, practicar y convertirte en un Maestro del Universo Matemático!
+                Antes de comenzar tu misión, por favor, ingresa tu nombre:
               </p>
+              <input
+                type="text"
+                placeholder="Tu Nombre de Cadete"
+                value={inputName}
+                onChange={(e) => setInputName(e.target.value)}
+                className="p-4 rounded-lg bg-gray-700 text-white text-xl border-2 border-blue-500 mb-6 w-full max-w-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
               <button
-                onClick={() => navigateTo('planet-selection')}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-xl transition duration-300 ease-in-out transform hover:scale-110 animate-bounce-slow mb-4"
+                onClick={handleStartAdventure}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-xl transition duration-300 ease-in-out transform hover:scale-110 animate-bounce-slow"
               >
                 <i className="fas fa-rocket mr-3"></i> ¡Comenzar Aventura!
               </button>
               <button
                 onClick={resetGame}
-                className="block mx-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                className="block mx-auto mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
               >
-                <i className="fas fa-redo mr-2"></i> Reiniciar Aventura
+                <i className="fas fa-redo mr-2"></i> Reiniciar Juego (borrar nombre)
               </button>
             </div>
           );
         };
 
+
         // Planet Selection Component
-        const PlanetSelection = ({ navigateTo, userProgress, areAllActivitiesCompleted }) => {
+        const PlanetSelection = ({ navigateTo, userProgress, areAllActivitiesCompleted, studentName }) => {
           const planets = [
             { name: 'Suma', operation: 'sumas', icon: 'fas fa-plus', color: 'bg-red-500', hoverColor: 'hover:bg-red-600' },
             { name: 'Resta', operation: 'restas', icon: 'fas fa-minus', color: 'bg-blue-500', hoverColor: 'hover:bg-blue-600' },
@@ -250,7 +332,7 @@
 
           return (
             <div className="text-center animate-fade-in">
-              <h2 className="text-4xl font-bold text-yellow-300 mb-8">Elige tu próximo destino galáctico:</h2>
+              <h2 className="text-4xl font-bold text-yellow-300 mb-8">¡Bienvenido, <span className="text-purple-300">{studentName}</span>! Elige tu próximo destino galáctico:</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
                 {planets.map(planet => (
                   <div
@@ -281,103 +363,212 @@
                 </button>
               )}
               {userProgress.finalEvaluationCompleted && (
-                <p className="text-2xl text-green-400 font-bold">¡Has completado la Evaluación Final!</p>
+                <p className="text-2xl text-green-400 font-bold">¡Has completado la Evaluación Final, {studentName}!</p>
               )}
             </div>
           );
         };
 
         // Operation Page Component (handles content, activities)
-        const OperationPage = ({ operation, navigateTo, userProgress, updateProgress }) => {
+        const OperationPage = ({ operation, navigateTo, userProgress, updateProgress, studentName }) => {
           const [currentSection, setCurrentSection] = React.useState('content'); // 'content', 'activity'
           const [activityIndex, setActivityIndex] = React.useState(0); // Current activity being displayed
-          const [showFeedback, setShowFeedback] = React.useState(false);
-          const [isCorrect, setIsCorrect] = React.useState(false);
+          const [showFeedbackModal, setShowFeedbackModal] = React.useState(false); // New: State for feedback modal
+          const [isCorrectFeedback, setIsCorrectFeedback] = React.useState(false); // New: State for feedback correctness
+          const [feedbackExplanation, setFeedbackExplanation] = React.useState(''); // New: State for explanation
           const [selectedAnswer, setSelectedAnswer] = React.useState(null); // For multiple choice
 
           // Data for each operation
           const operationData = {
             sumas: {
-              title: 'Planeta Suma: La Unión de Estrellas',
-              content: 'La suma es la operación de combinar o añadir dos o más números para obtener un total. Se representa con el signo "+". Por ejemplo, si tienes 3 estrellas y añades 2 más, ¡tendrás un total de 5 estrellas! $3 + 2 = 5$',
+              title: 'Suma: La Unión de Estrellas',
+              infographic: (
+                <div className="bg-gradient-to-br from-blue-700 to-purple-700 p-8 rounded-xl shadow-2xl border-4 border-yellow-400 animate-fade-in">
+                  <h3 className="text-4xl font-extrabold text-yellow-300 mb-6 text-center">🌟 El Arte de Unir 🌟</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="text-center">
+                      <i className="fas fa-plus text-6xl text-white mb-4 animate-bounce-slow"></i>
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación de **combinar o añadir** dos o más números para obtener un **total**. Se representa con el signo "+".</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
+                      <div className="flex justify-center items-center text-5xl">
+                        <i className="fas fa-star text-yellow-300"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">3</span>
+                        <i className="fas fa-plus text-green-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">2</span>
+                        <i className="fas fa-equals text-blue-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">5</span>
+                        <i className="fas fa-star text-yellow-300"></i>
+                      </div>
+                      <p className="text-lg text-gray-200 mt-4">Si tienes 3 estrellas y añades 2 más, ¡tendrás un total de 5 estrellas!</p>
+                    </div>
+                  </div>
+                </div>
+              ),
               activities: [
                 {
                   question: 'Si tienes 7 naves espaciales y encuentras 5 más, ¿cuántas naves tienes en total?',
                   options: ['10', '11', '12', '13'],
                   correctAnswerIndex: 2, // Index of '12'
+                  explanation: 'Para saber el total, sumamos las naves que tenías (7) con las que encontraste (5).\n7 + 5 = 12. ¡Tienes 12 naves espaciales!'
                 },
                 {
                   question: 'Un astronauta recogió 9 rocas lunares y luego otras 8. ¿Cuántas rocas tiene en total?',
                   options: ['15', '16', '17', '18'],
                   correctAnswerIndex: 2, // Index of '17'
+                  explanation: 'Sumamos las rocas iniciales (9) y las nuevas (8).\n9 + 8 = 17. El astronauta tiene 17 rocas lunares.'
                 },
                 {
                   question: '¿Cuál es el resultado de $15 + 13$?',
                   options: ['25', '26', '27', '28'],
                   correctAnswerIndex: 3, // Index of '28'
+                  explanation: 'Para sumar 15 y 13:\n1. Suma las unidades: 5 + 3 = 8.\n2. Suma las decenas: 1 + 1 = 2.\nEl resultado es 28.'
                 },
               ],
             },
             restas: {
-              title: 'Planeta Resta: El Despegue de Cohetes',
-              content: 'La resta es la operación que nos permite quitar una cantidad de otra para encontrar la diferencia. Se representa con el signo "-". Si tienes 10 cohetes y 3 despegan, te quedan 7 cohetes. $10 - 3 = 7$',
+              title: 'Resta: El Despegue de Cohetes',
+              infographic: (
+                <div className="bg-gradient-to-br from-indigo-700 to-cyan-700 p-8 rounded-xl shadow-2xl border-4 border-yellow-400 animate-fade-in">
+                  <h3 className="text-4xl font-extrabold text-yellow-300 mb-6 text-center">🚀 La Partida Estelar 🚀</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="text-center">
+                      <i className="fas fa-minus text-6xl text-white mb-4 animate-bounce-slow"></i>
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación que nos permite **quitar una cantidad** de otra para encontrar la **diferencia**. Se representa con el signo "-".</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
+                      <div className="flex justify-center items-center text-5xl">
+                        <i className="fas fa-rocket text-gray-300"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">10</span>
+                        <i className="fas fa-minus text-red-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">3</span>
+                        <i className="fas fa-equals text-blue-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">7</span>
+                        <i className="fas fa-rocket text-gray-300"></i>
+                      </div>
+                      <p className="text-lg text-gray-200 mt-4">Si tienes 10 cohetes y 3 despegan, ¡te quedan 7 cohetes!</p>
+                    </div>
+                  </div>
+                </div>
+              ),
               activities: [
                 {
                   question: 'Tienes 15 meteoritos y 6 se desintegran. ¿Cuántos meteoritos quedan?',
                   options: ['7', '8', '9', '10'],
                   correctAnswerIndex: 2, // Index of '9'
+                  explanation: 'Para saber cuántos quedan, restamos los meteoritos que se desintegraron (6) del total inicial (15).\n15 - 6 = 9. Te quedan 9 meteoritos.'
                 },
                 {
                   question: 'Una estación espacial tenía 20 paneles solares, pero 7 se dañaron. ¿Cuántos paneles funcionan ahora?',
                   options: ['11', '12', '13', '14'],
                   correctAnswerIndex: 2, // Index of '13'
+                  explanation: 'Restamos los paneles dañados (7) del total de paneles (20).\n20 - 7 = 13. Ahora funcionan 13 paneles.'
                 },
                 {
                   question: '¿Cuál es el resultado de $30 - 12$?',
                   options: ['16', '17', '18', '19'],
                   correctAnswerIndex: 2, // Index of '18'
+                  explanation: 'Para restar 30 y 12:\n1. Empieza por las unidades: no puedes restar 2 de 0, así que "toma prestado" del 30.\n2. El 0 se convierte en 10, y el 3 se convierte en 2. Ahora, 10 - 2 = 8.\n3. Resta las decenas: 2 - 1 = 1.\nEl resultado es 18.'
                 },
               ],
             },
             multiplicacion: {
-              title: 'Planeta Multiplicación: La Creación de Constelaciones',
-              content: 'La multiplicación es una forma rápida de sumar el mismo número varias veces. Se representa con el signo "x" o "*". Si tienes 4 grupos de 3 estrellas cada uno, tienes $4 \times 3 = 12$ estrellas en total. ¡Es como crear una constelación!',
+              title: 'Multiplicación: La Creación de Constelaciones',
+              infographic: (
+                <div className="bg-gradient-to-br from-green-700 to-teal-700 p-8 rounded-xl shadow-2xl border-4 border-yellow-400 animate-fade-in">
+                  <h3 className="text-4xl font-extrabold text-yellow-300 mb-6 text-center">🌌 El Poder de la Agrupación 🌌</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="text-center">
+                      <i className="fas fa-times text-6xl text-white mb-4 animate-bounce-slow"></i>
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es una forma **rápida de sumar** el mismo número varias veces. Se representa con los signos "x" o "*".</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
+                      <div className="flex justify-center items-center text-5xl">
+                        <i className="fas fa-star text-yellow-300"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">4</span>
+                        <i className="fas fa-times text-blue-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">3</span>
+                        <i className="fas fa-equals text-green-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">12</span>
+                        <i className="fas fa-star text-yellow-300"></i>
+                      </div>
+                      <p className="text-lg text-gray-200 mt-4">Si tienes 4 grupos de 3 estrellas cada uno, ¡tienes 12 estrellas en total!</p>
+                    </div>
+                  </div>
+                </div>
+              ),
               activities: [
                 {
                   question: 'Si cada nave espacial tiene 3 propulsores y tienes 6 naves, ¿cuántos propulsores hay en total?',
                   options: ['15', '18', '21', '24'],
                   correctAnswerIndex: 1, // Index of '18'
+                  explanation: 'Para encontrar el total de propulsores, multiplicamos el número de naves (6) por los propulsores por nave (3).\n6 x 3 = 18. Hay 18 propulsores en total.'
                 },
                 {
                   question: 'Un alienígena tiene 5 brazos, y hay 4 alienígenas. ¿Cuántos brazos hay en total?',
                   options: ['15', '20', '25', '30'],
                   correctAnswerIndex: 1, // Index of '20'
+                  explanation: 'Multiplicamos el número de alienígenas (4) por el número de brazos de cada uno (5).\n4 x 5 = 20. Hay 20 brazos en total.'
                 },
                 {
                   question: '¿Cuál es el resultado de $7 \times 8$?',
                   options: ['49', '54', '56', '63'],
                   correctAnswerIndex: 2, // Index of '56'
+                  explanation: 'Para multiplicar 7 por 8, puedes pensar en la tabla del 7 o la del 8.\n7 x 8 = 56.'
                 },
               ],
             },
             division: {
-              title: 'Planeta División: El Reparto de Recursos',
-              content: 'La división es la operación de repartir una cantidad en partes iguales. Se representa con el signo "÷" o "/". Si tienes 12 rocas espaciales y quieres repartirlas entre 4 astronautas por igual, cada uno recibirá 3 rocas. $12 \div 4 = 3$',
+              title: 'División: El Reparto de Recursos',
+              infographic: (
+                <div className="bg-gradient-to-br from-yellow-700 to-orange-700 p-8 rounded-xl shadow-2xl border-4 border-yellow-400 animate-fade-in">
+                  <h3 className="text-4xl font-extrabold text-yellow-300 mb-6 text-center">🌍 Equidad Galáctica 🌍</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="text-center">
+                      <i className="fas fa-divide text-6xl text-white mb-4 animate-bounce-slow"></i>
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación de **repartir una cantidad** en partes iguales. Se representa con los signos "÷" o "/".</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
+                      <div className="flex justify-center items-center text-5xl">
+                        <i className="fas fa-globe text-blue-300"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">12</span>
+                        <i className="fas fa-divide text-purple-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">4</span>
+                        <i className="fas fa-equals text-orange-400"></i>
+                        <span className="mx-2 font-bold text-white text-4xl">3</span>
+                        <i className="fas fa-globe text-blue-300"></i>
+                      </div>
+                      <p className="text-lg text-gray-200 mt-4">Si tienes 12 rocas espaciales y las repartes entre 4 astronautas, ¡cada uno recibirá 3 rocas!.</p>
+                    </div>
+                  </div>
+                </div>
+              ),
               activities: [
                 {
                   question: 'Tienes 24 raciones de comida y quieres repartirlas entre 4 astronautas por igual. ¿Cuántas raciones recibe cada uno?',
                   options: ['4', '6', '8', '10'],
                   correctAnswerIndex: 1, // Index of '6'
+                  explanation: 'Para repartir las raciones (24) entre los astronautas (4) por igual, realizamos una división.\n24 ÷ 4 = 6. Cada astronauta recibe 6 raciones.'
                 },
                 {
                   question: 'Si hay 35 estrellas fugaces y pasan en grupos de 5, ¿cuántos grupos de estrellas fugaces hay?',
                   options: ['5', '6', '7', '8'],
                   correctAnswerIndex: 2, // Index of '7'
+                  explanation: 'Dividimos el total de estrellas fugaces (35) por el tamaño de cada grupo (5).\n35 ÷ 5 = 7. Hay 7 grupos de estrellas fugaces.'
                 },
                 {
                   question: '¿Cuál es el resultado de $48 \div 6$?',
                   options: ['6', '7', '8', '9'],
                   correctAnswerIndex: 2, // Index of '8'
+                  explanation: 'Para dividir 48 entre 6, busca un número que multiplicado por 6 te dé 48.\n6 x 8 = 48. Por lo tanto, 48 ÷ 6 = 8.'
                 },
               ],
             },
@@ -388,38 +579,43 @@
 
           // Handle activity submission
           const handleActivitySubmit = () => {
-            if (selectedAnswer === null) return; // Prevent submission if no answer is selected
+            if (selectedAnswer === null) return;
 
-            // Ensure comparison is done on numbers, not strings from options
             const isCorrectAnswer = parseInt(selectedAnswer) === parseInt(currentActivity.options[currentActivity.correctAnswerIndex]);
-            setIsCorrect(isCorrectAnswer);
-            setShowFeedback(true);
+            setIsCorrectFeedback(isCorrectAnswer);
+            setFeedbackExplanation(currentActivity.explanation); // Set the explanation
+            setShowFeedbackModal(true);
 
             if (isCorrectAnswer) {
-              updateProgress(operation, 'activity', 1); // Increment completed activities
-              updateProgress(operation, 'score', 10); // Add points for correct answer
+              updateProgress(operation, 'activity', 1);
+              updateProgress(operation, 'score', 10);
             }
           };
 
-          // Move to the next activity or navigate back to planet selection
-          const handleNextActivity = () => {
-            setShowFeedback(false);
-            setSelectedAnswer(null);
-            if (activityIndex < currentOperationData.activities.length - 1) {
-              setActivityIndex(prev => prev + 1);
-            } else {
-              // All activities for this operation are done, go back to planet selection
-              updateProgress(operation, 'badge', `${operation}-master`); // Grant badge for completing all activities of an operation
-              navigateTo('planet-selection');
-            }
+          // Function to close the feedback modal and proceed
+          const closeFeedbackModal = () => {
+              setShowFeedbackModal(false);
+              setSelectedAnswer(null);
+
+              if (isCorrectFeedback) {
+                  if (activityIndex < currentOperationData.activities.length - 1) {
+                      setActivityIndex(prev => prev + 1);
+                  } else {
+                      updateProgress(operation, 'badge', `${operation}-master`);
+                      navigateTo('planet-selection');
+                  }
+              }
+              // If incorrect, the user stays on the current question until correct
           };
+
 
           // Reset state when changing operation or navigating away
           React.useEffect(() => {
             setActivityIndex(0);
             setCurrentSection('content');
-            setShowFeedback(false);
+            setShowFeedbackModal(false);
             setSelectedAnswer(null);
+            setFeedbackExplanation(''); // Reset explanation
           }, [operation]);
 
           // Render content based on currentSection
@@ -427,14 +623,13 @@
             switch (currentSection) {
               case 'content':
                 return (
-                  <div className="text-center animate-fade-in">
-                    <h3 className="text-3xl font-bold text-yellow-300 mb-4">Contenido: {currentOperationData.title}</h3>
-                    <p className="text-xl text-gray-200 mb-8 leading-relaxed">{currentOperationData.content}</p>
+                  <div className="text-center animate-fade-in w-full h-full flex flex-col justify-center items-center">
+                    {currentOperationData.infographic}
                     <button
                       onClick={() => setCurrentSection('activity')}
-                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                      className="mt-8 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
                     >
-                      <i className="fas fa-play mr-2"></i> Ir a Actividades
+                      <i className="fas fa-play mr-2"></i> ¡Comenzar Actividades!
                     </button>
                   </div>
                 );
@@ -450,48 +645,21 @@
                           onClick={() => setSelectedAnswer(option)}
                           className={`p-4 rounded-lg text-xl font-semibold transition duration-200 ease-in-out
                             ${selectedAnswer === option ? 'bg-blue-500 border-2 border-blue-300' : 'bg-gray-700 hover:bg-gray-600'}
-                            ${showFeedback && (parseInt(option) === parseInt(currentActivity.options[currentActivity.correctAnswerIndex]) ? 'bg-green-700' : (selectedAnswer === option ? 'bg-red-700' : ''))}
                           `}
-                          disabled={showFeedback} // Disable buttons after submission
+                          disabled={showFeedbackModal}
                         >
                           {option}
                         </button>
                       ))}
                     </div>
 
-                    {!showFeedback && (
-                      <button
-                        onClick={handleActivitySubmit}
-                        className="block mx-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mb-4"
-                        disabled={selectedAnswer === null}
-                      >
-                        <i className="fas fa-check mr-2"></i> Verificar
-                      </button>
-                    )}
-
-                    {showFeedback && (
-                      <div className={`p-4 rounded-lg text-xl font-semibold mb-4 ${isCorrect ? 'bg-green-700' : 'bg-red-700'}`}>
-                        {isCorrect ? (
-                          <>
-                            <i className="fas fa-star mr-2"></i> ¡Correcto! ¡Ganaste 10 puntos galácticos!
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-times-circle mr-2"></i> Incorrecto. La respuesta correcta era {currentActivity.options[currentActivity.correctAnswerIndex]}.
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                    {showFeedback && (
-                      <button
-                        onClick={handleNextActivity}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
-                      >
-                        {activityIndex < currentOperationData.activities.length - 1 ? 'Siguiente Actividad' : 'Volver a Planetas'}
-                        <i className="fas fa-arrow-right ml-2"></i>
-                      </button>
-                    )}
+                    <button
+                      onClick={handleActivitySubmit}
+                      className="block mx-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mb-4"
+                      disabled={selectedAnswer === null || showFeedbackModal}
+                    >
+                      <i className="fas fa-check mr-2"></i> Verificar
+                    </button>
                   </div>
                 );
               default:
@@ -502,35 +670,48 @@
           return (
             <div className="w-full h-full flex flex-col items-center justify-center">
               {renderSection()}
+              <FeedbackModal
+                  show={showFeedbackModal}
+                  isCorrect={isCorrectFeedback}
+                  correctAnswer={currentActivity.options[currentActivity.correctAnswerIndex]}
+                  explanation={feedbackExplanation}
+                  onClose={closeFeedbackModal}
+                  operationTitle={currentOperationData.title.split(':')[0]}
+                  studentName={studentName} // Pasa el nombre a FeedbackModal
+              />
             </div>
           );
         };
 
         // Final Evaluation Page Component
-        const FinalEvaluationPage = ({ navigateTo, updateProgress, userProgress }) => {
+        const FinalEvaluationPage = ({ navigateTo, updateProgress, userProgress, studentName }) => {
           const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
-          const [userAnswers, setUserAnswers] = React.useState(Array(10).fill(null)); // 10 questions total
+          const [userAnswers, setUserAnswers] = React.useState(Array(10).fill(null));
           const [showResults, setShowResults] = React.useState(false);
           const [score, setScore] = React.useState(0);
           const [showLockedMessage, setShowLockedMessage] = React.useState(false);
+          const [showEvaluationFeedbackModal, setShowEvaluationFeedbackModal] = React.useState(false);
+          const [isCorrectEvaluationFeedback, setIsCorrectEvaluationFeedback] = React.useState(false);
+          const [correctAnswerEvaluation, setCorrectAnswerEvaluation] = React.useState('');
+          const [explanationEvaluation, setExplanationEvaluation] = React.useState('');
 
           // Combined questions for the final evaluation
           const finalQuestions = [
             // Sumas
-            { question: 'Calcula: $23 + 17$', options: ['30', '35', '40', '45'], correctAnswerIndex: 2 },
-            { question: 'Un cohete viaja 120 km y luego 80 km más. ¿Cuánto viajó en total?', options: ['180 km', '190 km', '200 km', '210 km'], correctAnswerIndex: 2 },
+            { question: 'Calcula: $23 + 17$', options: ['30', '35', '40', '45'], correctAnswerIndex: 2, explanation: '23 + 17 = 40. Suma 3 + 7 para obtener 10 (lleva 1). Luego suma 2 + 1 + 1 (que llevabas) para obtener 4. Total: 40.' },
+            { question: 'Un cohete viaja 120 km y luego 80 km más. ¿Cuánto viajó en total?', options: ['180 km', '190 km', '200 km', '210 km'], correctAnswerIndex: 2, explanation: 'Para el total, suma las distancias: 120 km + 80 km = 200 km. El cohete viajó 200 km.' },
             // Restas
-            { question: 'Calcula: $50 - 25$', options: ['20', '25', '30', '35'], correctAnswerIndex: 1 },
-            { question: 'Un astronauta tenía 45 raciones de comida y consumió 15. ¿Cuántas le quedan?', options: ['20', '25', '30', '35'], correctAnswerIndex: 2 },
+            { question: 'Calcula: $50 - 25$', options: ['20', '25', '30', '35'], correctAnswerIndex: 1, explanation: '50 - 25 = 25. Si tienes 50 y quitas 25, te quedas con 25.' },
+            { question: 'Un astronauta tenía 45 raciones de comida y consumió 15. ¿Cuántas le quedan?', options: ['20', '25', '30', '35'], correctAnswerIndex: 2, explanation: 'Resta las raciones consumidas de las iniciales: 45 - 15 = 30. Le quedan 30 raciones.' },
             // Multiplicación
-            { question: 'Calcula: $9 \times 7$', options: ['54', '63', '72', '81'], correctAnswerIndex: 1 },
-            { question: 'Si cada planeta tiene 8 lunas y hay 5 planetas, ¿cuántas lunas hay en total?', options: ['30', '35', '40', '45'], correctAnswerIndex: 2 },
+            { question: 'Calcula: $9 \times 7$', options: ['54', '63', '72', '81'], correctAnswerIndex: 1, explanation: '9 x 7 = 63. Recordando las tablas de multiplicar.' },
+            { question: 'Si cada planeta tiene 8 lunas y hay 5 planetas, ¿cuántas lunas hay en total?', options: ['30', '35', '40', '45'], correctAnswerIndex: 2, explanation: 'Multiplica el número de planetas por el número de lunas por planeta: 5 x 8 = 40. Hay 40 lunas en total.' },
             // División
-            { question: 'Calcula: $81 \div 9$', options: ['7', '8', '9', '10'], correctAnswerIndex: 2 },
-            { question: 'Un equipo de 6 astronautas debe compartir 54 litros de agua. ¿Cuántos litros le tocan a cada uno?', options: ['7', '8', '9', '10'], correctAnswerIndex: 2 },
+            { question: 'Calcula: $81 \div 9$', options: ['7', '8', '9', '10'], correctAnswerIndex: 2, explanation: '81 ÷ 9 = 9. Porque 9 multiplicado por 9 es 81.' },
+            { question: 'Un equipo de 6 astronautas debe compartir 54 litros de agua. ¿Cuántos litros le tocan a cada uno?', options: ['7', '8', '9', '10'], correctAnswerIndex: 2, explanation: 'Divide el total de litros de agua entre el número de astronautas: 54 ÷ 6 = 9. Cada uno recibe 9 litros.' },
             // Mixed questions
-            { question: 'Si tienes 100 estrellas y 25 se apagan, ¿cuántas quedan?', options: ['65', '70', '75', '80'], correctAnswerIndex: 2 },
-            { question: '¿Cuál es el resultado de $12 \times 6$?', options: ['60', '66', '72', '78'], correctAnswerIndex: 2 },
+            { question: 'Si tienes 100 estrellas y 25 se apagan, ¿cuántas quedan?', options: ['65', '70', '75', '80'], correctAnswerIndex: 2, explanation: '100 - 25 = 75. Quedan 75 estrellas.' },
+            { question: '¿Cuál es el resultado de $12 \times 6$?', options: ['60', '66', '72', '78'], correctAnswerIndex: 2, explanation: '12 x 6 = 72. Puedes sumar 12 seis veces o multiplicar 12 por 6.' },
           ];
 
           // Check if all activities across all operations are completed to enable final evaluation
@@ -540,55 +721,90 @@
 
           // Effect to handle initial access and locked message
           React.useEffect(() => {
-            if (!areAllActivitiesCompleted && !userProgress.finalEvaluationCompleted) { // Only show locked message if not completed and not already evaluated
+            if (!areAllActivitiesCompleted && !userProgress.finalEvaluationCompleted) {
               setShowLockedMessage(true);
               const timer = setTimeout(() => {
                 setShowLockedMessage(false);
-                navigateTo('planet-selection'); // Redirect if not qualified
+                navigateTo('planet-selection');
               }, 3000);
               return () => clearTimeout(timer);
             }
           }, [areAllActivitiesCompleted, userProgress.finalEvaluationCompleted, navigateTo]);
 
-          // If the final evaluation is already completed, show results immediately
           React.useEffect(() => {
             if (userProgress.finalEvaluationCompleted && !showResults) {
-              // Recalculate score based on stored answers if available, or just display previous score
-              // For simplicity, we'll just set a dummy score if already completed and results aren't shown
-              // In a real app, you'd persist userAnswers or the score itself
-              calculateResults();
+                setScore(userProgress.totalScore);
+                setShowResults(true);
             }
-          }, [userProgress.finalEvaluationCompleted, showResults]);
+          }, [userProgress.finalEvaluationCompleted, showResults, userProgress.totalScore]);
 
-
-          // Handle selection of an answer
+          // Handle selection of an answer for final evaluation
           const handleAnswerSelect = (optionIndex) => {
             const newAnswers = [...userAnswers];
             newAnswers[currentQuestionIndex] = optionIndex;
             setUserAnswers(newAnswers);
           };
 
-          // Move to next question or show results
-          const handleNextQuestion = () => {
-            if (currentQuestionIndex < finalQuestions.length - 1) {
-              setCurrentQuestionIndex(prev => prev + 1);
-            } else {
-              calculateResults();
-            }
+          // Handle submission for final evaluation question
+          const handleSubmitEvaluationQuestion = () => {
+              if (userAnswers[currentQuestionIndex] === null) return;
+
+              const currentQ = finalQuestions[currentQuestionIndex];
+              const isCorrect = userAnswers[currentQuestionIndex] === currentQ.correctAnswerIndex;
+
+              setIsCorrectEvaluationFeedback(isCorrect);
+              setCorrectAnswerEvaluation(currentQ.options[currentQ.correctAnswerIndex]);
+              setExplanationEvaluation(currentQ.explanation);
+              setShowEvaluationFeedbackModal(true);
+          };
+
+          // Close the evaluation feedback modal and proceed
+          const closeEvaluationFeedbackModal = () => {
+              setShowEvaluationFeedbackModal(false);
+              const currentQ = finalQuestions[currentQuestionIndex];
+              const isCorrect = userAnswers[currentQuestionIndex] === currentQ.correctAnswerIndex;
+
+              if (isCorrect) {
+                  // Only advance if correct
+                  if (currentQuestionIndex < finalQuestions.length - 1) {
+                      setCurrentQuestionIndex(prev => prev + 1);
+                      // Clear selected answer for the next question
+                      setUserAnswers(prev => {
+                          const newAnswers = [...prev];
+                          newAnswers[currentQuestionIndex + 1] = null; // Prepare for next question
+                          return newAnswers;
+                      });
+                  } else {
+                      // If it's the last question and correct, calculate results
+                      calculateResults();
+                  }
+              } else {
+                  // If incorrect, stay on the same question, but clear the selected answer for reattempt
+                  setUserAnswers(prev => {
+                      const newAnswers = [...prev];
+                      newAnswers[currentQuestionIndex] = null; // Clear selected answer for reattempt
+                      return newAnswers;
+                  });
+              }
           };
 
           // Calculate final score and update progress
           const calculateResults = () => {
             let correctCount = 0;
             finalQuestions.forEach((q, index) => {
+              // We'll consider a question "correctly answered" if the last attempt stored was correct
+              // This is a simplification; a more complex system would track per-question correct attempts
               if (userAnswers[index] !== null && userAnswers[index] === q.correctAnswerIndex) {
                 correctCount++;
               }
             });
-            const finalScore = correctCount * 10; // 10 points per correct answer
+            const finalScore = correctCount * 10;
             setScore(finalScore);
-            updateProgress('global', 'score', finalScore); // Add evaluation score to total
-            updateProgress('global', 'finalEvaluationCompleted', true); // Mark as evaluated
+
+            if (!userProgress.finalEvaluationCompleted) {
+                updateProgress('global', 'score', finalScore);
+                updateProgress('global', 'finalEvaluationCompleted', true);
+            }
             setShowResults(true);
           };
 
@@ -600,73 +816,75 @@
             );
           }
 
-          // This fallback is less likely to be hit now due to the useEffect redirect
-          if (!areAllActivitiesCompleted && !showLockedMessage && !userProgress.finalEvaluationCompleted) {
+          if (showResults) {
             return (
-              <div className="text-center text-red-400 text-2xl">
-                Por favor, completa todas las actividades antes de acceder a la evaluación final.
+              <div className="text-center animate-fade-in">
+                <h3 className="text-4xl font-bold text-yellow-300 mb-6">¡Evaluación Final Completada!</h3>
+                <p className="text-3xl text-green-400 font-bold mb-4">Tu Puntuación en la Evaluación, {studentName}: {score} puntos</p>
+                <p className="text-2xl text-gray-200 mb-8">¡Felicidades, Cadete {studentName}! Has demostrado tu maestría matemática en la galaxia.</p>
+                {userProgress.totalScore >= 100 && (
+                    <p className="text-3xl font-bold text-yellow-500 animate-bounce-in">¡Has obtenido la insignia de MAESTRO GALÁCTICO!</p>
+                )}
+                <button
+                  onClick={() => navigateTo('home')}
+                  className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  <i className="fas fa-home mr-2"></i> Volver al Inicio
+                </button>
               </div>
             );
           }
 
+          if (!areAllActivitiesCompleted && !showLockedMessage && !userProgress.finalEvaluationCompleted) {
+            return (
+              <div className="text-center text-red-400 text-2xl">
+                Por favor, completa todas las actividades antes de acceder a la evaluación final. Redireccionando...
+              </div>
+            );
+          }
+
+          const currentQuestion = finalQuestions[currentQuestionIndex];
+
           return (
             <div className="text-center animate-fade-in w-full">
-              <h3 className="text-3xl font-bold text-yellow-300 mb-6">Evaluación Final Galáctica</h3>
+              <h3 className="text-3xl font-bold text-yellow-300 mb-4">Pregunta {currentQuestionIndex + 1} de {finalQuestions.length}</h3>
+              <p className="text-2xl text-gray-200 mb-6">{currentQuestion.question}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {currentQuestion.options.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswerSelect(index)}
+                    className={`p-4 rounded-lg text-xl font-semibold transition duration-200 ease-in-out
+                      ${userAnswers[currentQuestionIndex] === index ? 'bg-blue-500 border-2 border-blue-300' : 'bg-gray-700 hover:bg-gray-600'}
+                    `}
+                    disabled={showEvaluationFeedbackModal}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleSubmitEvaluationQuestion}
+                className="block mx-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                disabled={userAnswers[currentQuestionIndex] === null || showEvaluationFeedbackModal}
+              >
+                <i className="fas fa-check mr-2"></i> Verificar
+              </button>
 
-              {!showResults ? (
-                <div className="flex flex-col items-center">
-                  <p className="text-2xl text-gray-200 mb-6">{finalQuestions[currentQuestionIndex].question}</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 w-full max-w-md">
-                    {finalQuestions[currentQuestionIndex].options.map((option, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleAnswerSelect(index)}
-                        className={`p-4 rounded-lg text-xl font-semibold transition duration-200 ease-in-out
-                          ${userAnswers[currentQuestionIndex] === index ? 'bg-blue-500 border-2 border-blue-300' : 'bg-gray-700 hover:bg-gray-600'}
-                        `}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={handleNextQuestion}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
-                    disabled={userAnswers[currentQuestionIndex] === null} // Disable if no answer selected
-                  >
-                    {currentQuestionIndex < finalQuestions.length - 1 ? 'Siguiente Pregunta' : 'Finalizar Evaluación'}
-                    <i className="fas fa-arrow-right ml-2"></i>
-                  </button>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <h4 className="text-4xl font-extrabold text-green-400 mb-4">¡Evaluación Final Completada!</h4>
-                  <p className="text-3xl text-white mb-6">Tu puntuación final: <span className="font-bold text-yellow-300">{score} puntos</span></p>
-                  {score >= 70 && ( // Example: 70 points for a good score in final evaluation
-                    <div className="bg-yellow-700 p-4 rounded-lg mb-6 shadow-xl">
-                      <i className="fas fa-award text-5xl text-yellow-300 animate-bounce"></i>
-                      <p className="text-2xl font-semibold text-white mt-2">¡Felicitaciones! Has ganado el Logro Galáctico de Maestro del Universo Matemático.</p>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => navigateTo('planet-selection')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mr-4"
-                  >
-                    <i className="fas fa-globe mr-2"></i> Volver a Selección de Planetas
-                  </button>
-                  <button
-                    onClick={() => navigateTo('home')}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
-                  >
-                    <i className="fas fa-home mr-2"></i> Ir a Inicio
-                  </button>
-                </div>
-              )}
+              <FeedbackModal
+                  show={showEvaluationFeedbackModal}
+                  isCorrect={isCorrectEvaluationFeedback}
+                  correctAnswer={correctAnswerEvaluation}
+                  explanation={explanationEvaluation}
+                  onClose={closeEvaluationFeedbackModal}
+                  operationTitle="Evaluación Final"
+                  studentName={studentName} // Pasa el nombre a FeedbackModal
+              />
             </div>
           );
         };
 
-        // Render the App component into the 'root' div
+        // Render the App component into the root div
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
