@@ -61,9 +61,9 @@
             if (!show) return null;
 
             const title = isCorrect ? `¡Misión Cumplida en ${operationTitle}!` : `¡Ajuste de Ruta en ${operationTitle}!`;
-            const icon = isCorrect ? 'fas fa-check-circle text-green-400' : 'fas fa-times-circle text-red-400';
-            const bgColor = isCorrect ? 'from-green-700 to-emerald-800' : 'from-red-700 to-rose-800';
-            const borderColor = isCorrect ? 'border-green-400' : 'border-red-400';
+            const icon = isCorrect ? 'fas fa-check-circle text-green-400' : 'fas fa-times-circle text-yellow-400';
+            const bgColor = isCorrect ? 'from-green-700 to-emerald-800' : 'from-amber-700 to-yellow-800';
+            const borderColor = isCorrect ? 'border-green-400' : 'border-yellow-400';
             const message = isCorrect ? `¡Felicidades, ${studentName}! Tu respuesta es correcta. Ganaste 10 Puntos Galácticos.` : `Parece que hubo un pequeño error, ${studentName}. La respuesta correcta era: ${correctAnswer}.`;
             const actionText = isCorrect ? 'Siguiente Desafío' : 'Cerrar y Reintentar';
 
@@ -389,7 +389,7 @@
                     <div className="text-center">
                       <i className="fas fa-plus text-6xl text-white mb-4 animate-bounce-slow"></i>
                       <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
-                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación de **combinar o añadir** dos o más números para obtener un **total**. Se representa con el signo "+".</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación de combinar o añadir dos o más números para obtener un total. Se representa con el signo "+".</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
@@ -416,15 +416,15 @@
                 },
                 {
                   question: 'Un astronauta recogió 9 rocas lunares y luego otras 8. ¿Cuántas rocas tiene en total?',
-                  options: ['15', '16', '17', '18'],
-                  correctAnswerIndex: 2, // Index of '17'
+                  options: ['15', '16', '18', '17'],
+                  correctAnswerIndex: 3, // Index of '17'
                   explanation: 'Sumamos las rocas iniciales (9) y las nuevas (8).\n9 + 8 = 17. El astronauta tiene 17 rocas lunares.'
                 },
                 {
-                  question: '¿Cuál es el resultado de $15 + 13$?',
+                  question: '¿Cuál es el resultado si en el primer viaje visitas 15 crateres y en el segundo visitas 13 cratares?',
                   options: ['25', '26', '27', '28'],
                   correctAnswerIndex: 3, // Index of '28'
-                  explanation: 'Para sumar 15 y 13:\n1. Suma las unidades: 5 + 3 = 8.\n2. Suma las decenas: 1 + 1 = 2.\nEl resultado es 28.'
+                  explanation: 'Para saber cuantos crateres encontraste\nSuma los 15 primeros crateres + los 13 cretares restantes.\nEl resultado es 28 crateres .'
                 },
               ],
             },
@@ -437,7 +437,7 @@
                     <div className="text-center">
                       <i className="fas fa-minus text-6xl text-white mb-4 animate-bounce-slow"></i>
                       <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
-                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación que nos permite **quitar una cantidad** de otra para encontrar la **diferencia**. Se representa con el signo "-".</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación que nos permite quitar una cantidad de otra para encontrar la diferencia. Se representa con el signo "-".</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
@@ -469,7 +469,7 @@
                   explanation: 'Restamos los paneles dañados (7) del total de paneles (20).\n20 - 7 = 13. Ahora funcionan 13 paneles.'
                 },
                 {
-                  question: '¿Cuál es el resultado de $30 - 12$?',
+                  question: '¿Cuál es el resultado de 30 - 12?',
                   options: ['16', '17', '18', '19'],
                   correctAnswerIndex: 2, // Index of '18'
                   explanation: 'Para restar 30 y 12:\n1. Empieza por las unidades: no puedes restar 2 de 0, así que "toma prestado" del 30.\n2. El 0 se convierte en 10, y el 3 se convierte en 2. Ahora, 10 - 2 = 8.\n3. Resta las decenas: 2 - 1 = 1.\nEl resultado es 18.'
@@ -485,7 +485,7 @@
                     <div className="text-center">
                       <i className="fas fa-times text-6xl text-white mb-4 animate-bounce-slow"></i>
                       <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
-                      <p className="text-lg text-gray-200 leading-relaxed">Es una forma **rápida de sumar** el mismo número varias veces. Se representa con los signos "x" o "*".</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es una forma rápida de sumar el mismo número varias veces. Se representa con los signos "x" o "*".</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
@@ -533,7 +533,7 @@
                     <div className="text-center">
                       <i className="fas fa-divide text-6xl text-white mb-4 animate-bounce-slow"></i>
                       <p className="text-2xl text-gray-100 font-semibold mb-2">¿Qué es?</p>
-                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación de **repartir una cantidad** en partes iguales. Se representa con los signos "÷" o "/".</p>
+                      <p className="text-lg text-gray-200 leading-relaxed">Es la operación de repartir una cantidad en partes iguales. Se representa con los signos "÷" o "/".</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl text-gray-100 font-semibold mb-2">En el Espacio...</p>
